@@ -1,0 +1,38 @@
+﻿@page "/reportpreview/{id:int}"
+
+@using FT_SpReport.CoreBusiness.Models
+
+@inject NavigationManager NavigationManager
+@inject ReportModelService ReportModelService
+@inject BrowserService Service
+
+@if (spModel == null || string.IsNullOrWhiteSpace(spModel.ReportURL))
+{ }
+else
+{
+        <iframe id="myframe" src=@spModel.ReportURL style="width:100% ;height:@Height" frameborder=0></iframe>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    private ReportModel spModel { get; set; }
+    private UrlModel urlmodel { get; set; }
+
+    public string Height { get; set; }
+
+    async Task GetDimensions()
+    {
+        var dimension = await Service.GetDimensions();
+        Height = (dimension.Height - 100).ToString() + "px";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetDimensions();
+        if (Id <= 0) return;
+
+        spModel = await ReportModelService.getAsyncModels(Id);
+    }
+
+}

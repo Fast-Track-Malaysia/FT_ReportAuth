@@ -1,0 +1,12 @@
+﻿@page "/spmodelrolelist"
+@attribute [Authorize(Policy = "RequireManagerPolicy")]
+
+@inject NavigationManager NavigationManager
+
+    <h3>Query Role</h3>
+
+    <SpModelListingComponent Mode="2"></SpModelListingComponent>
+
+    @code {
+
+    }

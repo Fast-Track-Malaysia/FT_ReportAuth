@@ -1,0 +1,79 @@
+﻿@page "/lookupmodellist"
+@attribute [Authorize(Policy = "RequireAdminPolicy")]
+
+@using System
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Collections.ObjectModel
+@using Microsoft.AspNetCore.Http
+
+@using FT_SpReport.CoreBusiness.Models
+@using FT_SpReport.CoreBusiness.Services
+@using DevExtreme.AspNet.Data.ResponseModel
+@using DevExtreme.AspNet.Data
+
+@inject NavigationManager NavigationManager
+@inject LookupModelService LookupModelService
+
+<h3>Lookup Manager</h3>
+
+<DxButton RenderStyle="ButtonRenderStyle.Danger" Click="@AddItem" IconCssClass="" Text="New Lookup" />
+<br />
+
+@if (lookupmodels != null && lookupmodels.Length > 0)
+{
+    <DxDataGrid T="@LookupModel" CustomData="@LoadOrderData"
+                PageSize="10" ShowFilterRow="true"
+                @ref="@grid" RowClick="@OnRowClick">
+        <DxDataGridColumn Field="@nameof(LookupModel.LookUpName)" Caption="Lookup Name"></DxDataGridColumn>
+        <DxDataGridColumn Field="@nameof(LookupModel.LookUpSQL)" Caption="SQL"></DxDataGridColumn>
+    </DxDataGrid>
+    <br />
+
+    <br />
+}
+else
+{
+    <b>Nothing found.</b>
+}
+
+@code {
+    DxDataGrid<LookupModel> grid;
+    LookupModel[] lookupmodels;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        lookupmodels = await LookupModelService.getAsyncModels();
+
+    }
+
+    void AddItem(MouseEventArgs args)
+    {
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "lookupmodeledit/0");
+        //NavigationManager.NavigateTo("spmodeledit/0");
+    }
+    protected Task<LoadResult> LoadOrderData(DataSourceLoadOptionsBase options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(DataSourceLoader.Load(lookupmodels, options));
+    }
+    void OnRowClick(DataGridRowClickEventArgs<LookupModel> args)
+    {
+        //if (grid.IsDataRowSelected(args.DataItem) && !args.MouseEventArgs.CtrlKey)
+        //{
+        //    grid.SetDataRowSelected(args.DataItem, false);
+        //    args.Handled = true;
+        //}
+        int id = args.DataItem.Id;
+        if (args.MouseEventArgs.Detail == 2) // double click
+        {
+        }
+        else if (args.MouseEventArgs.CtrlKey)
+        {
+        }
+        else
+        {
+            NavigationManager.NavigateTo(NavigationManager.BaseUri + "lookupmodeledit/" + id.ToString());
+        }
+    }
+}

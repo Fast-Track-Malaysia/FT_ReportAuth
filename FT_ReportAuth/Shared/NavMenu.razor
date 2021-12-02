@@ -1,0 +1,95 @@
+﻿<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">Query Management</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <ul class="nav flex-column">
+        <li class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span> Home
+            </NavLink>
+        </li>
+        <AuthorizeView Policy="RequireUserPolicy">
+            <Authorized>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="spmodelfilterlist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Run Query
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="reportmodelfilterlist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Run Report
+                    </NavLink>
+                </li>
+                @*<li class="nav-item px-3">
+            <NavLink class="nav-link" href="chartedit/grid1">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Chart
+            </NavLink>
+        </li>*@
+            </Authorized>
+            <NotAuthorized>
+            </NotAuthorized>
+        </AuthorizeView>
+        <AuthorizeView Policy="RequireManagerPolicy">
+            <Authorized>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="spmodelrolelist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Query Role
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="userlist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> User Role
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="reportmodelrolelist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Report Role
+                    </NavLink>
+                </li>
+            </Authorized>
+            <NotAuthorized>
+            </NotAuthorized>
+        </AuthorizeView>
+        <AuthorizeView Policy="RequireAdminPolicy">
+            <Authorized>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="spmodellist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Query Manager
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="lookupmodellist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Lookup Manager
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="reportmodellist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Report Manager
+                    </NavLink>
+                </li>
+                <li class="nav-item px-3">
+                    <NavLink class="nav-link" href="rolelist">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> Role
+                    </NavLink>
+                </li>
+            </Authorized>
+            <NotAuthorized>
+            </NotAuthorized>
+        </AuthorizeView>
+    </ul>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

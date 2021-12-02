@@ -1,0 +1,88 @@
+﻿@page "/reportassignroleedit/{type}/{spname}"
+
+@using FT_ReportAuth.Data
+@using Microsoft.AspNetCore.Identity
+
+@inject NavigationManager NavigationManager
+@inject IHttpService HttpService
+
+<h3>@SpName</h3>
+<DxButton RenderStyle="ButtonRenderStyle.Success" Click="@SubmitForm" IconCssClass="" Text="Submit" />
+<table id="ParamList" class="table">
+    <thead>
+        <tr>
+            <th>
+                Role Name
+            </th>
+            <th>
+                Applied
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (ParamTypes != null && ParamTypes.Count() > 0)
+        {
+            @foreach (var item in ParamTypes.OrderBy(pp => pp.Name))
+            {
+                <tr>
+                    <td>
+                        <b>@item.Name</b>
+                    </td>
+                    <td>
+                        <DxCheckBox @bind-Checked="@item.Applied" CheckType="CheckType.Switch" Enabled="@item.EnableEdit"></DxCheckBox>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td>
+                    No Parameters found.
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter]
+    public string SpName { get; set; }
+    [Parameter]
+    public string Type { get; set; }
+
+    IEnumerable<SpRole> ParamTypes { get; set; }
+
+    SpRole Value { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        //ParamTypes = ((SpParamType[])Enum.GetValues(typeof(SpParamType))).Select(c => new paramtype() { value = (int)c, name = c.ToString() }).ToList();
+
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        ParamTypes = await HttpService.Get<IEnumerable<SpRole>>(string.Format("api/UserRole/{0}/{1}", Type, SpName));
+    }
+    async void SubmitForm(MouseEventArgs args)
+    {
+        if (Type == SpRoleypeEnum.user.ToString())
+        {
+            await HttpService.Post<IdentityRole>(string.Format("api/AssignRole/{0}/{1}", Type, SpName), ParamTypes.ToArray());
+            NavigationManager.NavigateTo(NavigationManager.BaseUri + "userlist");
+        }
+        else if (Type == SpRoleypeEnum.spmodel.ToString())
+        {
+            await HttpService.Post<SpModel>(string.Format("api/AssignRole/{0}/{1}", Type, SpName), ParamTypes.ToArray());
+            NavigationManager.NavigateTo(NavigationManager.BaseUri + "spmodelrolelist");
+        }
+        else if (Type == SpRoleypeEnum.reportmodel.ToString())
+        {
+            await HttpService.Post<ReportModel>(string.Format("api/AssignRole/{0}/{1}", Type, SpName), ParamTypes.ToArray());
+            NavigationManager.NavigateTo(NavigationManager.BaseUri + "reportmodelrolelist");
+        }
+
+    }
+
+}

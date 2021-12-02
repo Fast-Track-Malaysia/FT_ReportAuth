@@ -1,0 +1,193 @@
+﻿@using System.Threading
+@using System.Threading.Tasks
+@using FT_SpReport.CoreBusiness.Models
+@using DevExtreme.AspNet.Data.ResponseModel
+@using DevExtreme.AspNet.Data
+
+@inject LookupModelService LookupModelService
+
+
+<DxPopup HeaderText="Lookup"
+         @bind-Visible="@PopupVisible">
+    <Content>
+        <DxDataGrid T="@LookupResult" CustomData="@LoadOrderData"
+                    PageSize="10" ShowFilterRow="true"
+                    @ref="@grid" RowClick="@OnRowClick">
+            <DxDataGridColumn Field="@nameof(LookupResult.Code)" Caption="Code"></DxDataGridColumn>
+            <DxDataGridColumn Field="@nameof(LookupResult.Name)" Caption="Name"></DxDataGridColumn>
+        </DxDataGrid>
+        <br />
+        <DxButton RenderStyle="ButtonRenderStyle.Danger" Click="@CancelLookup" IconCssClass="" Text="Cancel" />
+    </Content>
+</DxPopup>
+
+
+@if (this.Param != null)
+{
+    <tr>
+        @if (!querying)
+        {
+            <td>
+                <DxButton RenderStyle="ButtonRenderStyle.Link" Click="@DeleteItem" IconCssClass="" Text="Delete" />
+            </td>
+            <td>
+                <DxSpinEdit @bind-Value="@Param.Seq" ReadOnly="@querying" />
+            </td>
+        }
+        <td>
+            <DxTextBox @bind-Text="@Param.ParamName" ReadOnly="@querying" />
+        </td>
+        <td>
+            <DxComboBox Data="@ParamTypes" Value="@Value" TextFieldName="@nameof(Value.name)" ReadOnly="@querying"
+                        ValueChanged="@((paramtype value) => SelectedCountryChanged(value))"></DxComboBox>
+        </td>
+        @if (querying)
+        {
+            @if (Param.ParamType == SpParamTypeEnum.dateType)
+            {
+                <td>
+                    @*<DxDateEdit @bind-Date="@paramdate" DateChanged="@((DateTime newDateValue) => OnDateChanged(newDateValue))" />*@
+                    <DxDateEdit @bind-Date="@Param.ParamDatetime" />
+                </td>
+            }
+            else if (Param.ParamType == SpParamTypeEnum.numberType)
+            {
+                <td>
+                    @*<DxSpinEdit @bind-Value="@paramdec" ValueChanged="@((decimal newDecimal) => OnValueChanged(newDecimal))" />*@
+                    <DxSpinEdit @bind-Value="@Param.ParamDecimal" />
+                </td>
+            }
+            else
+            {
+                <td>
+                    @*<DxTextBox @bind-Text="@Param.ParamValue" TextChanged="@((string newValue) => OnTextChanged(newValue))" />*@
+                    <DxTextBox @bind-Text="@Param.ParamValue" ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"/>
+                </td>
+            }
+            <td>
+                <DxButton RenderStyle="ButtonRenderStyle.Link" Click="@LookupItem" IconCssClass="" Text="Lookup" Enabled="@IsLookup"/>
+            </td>
+        }
+        @if (!querying)
+        {
+            <td>
+                <DxTextBox @bind-Text="@Param.LookupName" />
+            </td>
+        }
+    </tr>
+}
+
+@code {
+    [Parameter]
+    public SpParamModel Param { get; set; }
+    [Parameter]
+    public SpModel Model { get; set; }
+    [Parameter]
+    public bool querying { get; set; } = false;
+
+    IEnumerable<paramtype> ParamTypes { get; set; }
+
+    string Text { get; set; }
+    paramtype Value { get; set; }
+    bool PopupVisible { get; set; } = false;
+    DxDataGrid<LookupResult> grid;
+    LookupResult[] LookupResults;
+    bool IsLookup { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!querying) return;
+        if (string.IsNullOrWhiteSpace(Param.LookupName)) return;
+        IsLookup = true;
+        LookupResults = await LookupModelService.getAsyncModels(Param.LookupName);
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ParamTypes = ((SpParamTypeEnum[])Enum.GetValues(typeof(SpParamTypeEnum))).Select(c => new paramtype() { value = (int)c, name = c.ToString() }).ToList();
+    }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (Param == null) return;
+
+        Text = Enum.GetName(typeof(SpParamTypeEnum), Param.ParamType);
+        Value = ParamTypes.Where(pp => pp.value == (int)Param.ParamType).FirstOrDefault();
+        Param.ParamDatetime = Param.ParamDatetime == DateTime.MinValue ? DateTime.Today : Param.ParamDatetime;
+
+    }
+    void SelectedCountryChanged(paramtype value)
+    {
+        Value = value;
+        Param.ParamType = (SpParamTypeEnum)value.value;
+    }
+    void DeleteItem(MouseEventArgs args)
+    {
+        if (querying) return;
+
+        Model.Details.Remove(Param);
+        Param = null;
+    }
+    void CancelLookup(MouseEventArgs args)
+    {
+        PopupVisible = false;
+        //StateHasChanged();
+    }
+    protected Task<LoadResult> LoadOrderData(DataSourceLoadOptionsBase options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(DataSourceLoader.Load(LookupResults, options));
+    }
+    void LookupItem(MouseEventArgs args)
+    {
+        if (!querying) return;
+        PopupVisible = true;
+
+    }
+    void OnRowClick(DataGridRowClickEventArgs<LookupResult> args)
+    {
+        //if (grid.IsDataRowSelected(args.DataItem) && !args.MouseEventArgs.CtrlKey)
+        //{
+        //    grid.SetDataRowSelected(args.DataItem, false);
+        //    args.Handled = true;
+        //}
+        string code = args.DataItem.Code;
+        if (args.MouseEventArgs.Detail == 2) // double click
+        {
+        }
+        else if (args.MouseEventArgs.CtrlKey)
+        {
+        }
+        else
+        {
+            if (Param.ParamType == SpParamTypeEnum.stringType)
+                Param.ParamValue = code;
+            else if (Param.ParamType == SpParamTypeEnum.numberType)
+            {
+                Decimal temp = 0;
+                if (Decimal.TryParse(code, out temp))
+                {
+                    Param.ParamDecimal = temp;
+                }
+            }
+            else if (Param.ParamType == SpParamTypeEnum.dateType)
+            {
+                DateTime temp = DateTime.Today;
+                if (DateTime.TryParse(code, out temp))
+                {
+                    Param.ParamDatetime = temp;
+                }
+
+            }
+            PopupVisible = false;
+            StateHasChanged();
+        }
+    }
+
+    private class paramtype
+    {
+        public int value { get; set; }
+        public string name { get; set; }
+    }
+}

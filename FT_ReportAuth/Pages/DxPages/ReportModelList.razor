@@ -1,0 +1,18 @@
+﻿@page "/reportmodellist"
+@attribute [Authorize(Policy = "RequireAdminPolicy")]
+
+@inject NavigationManager NavigationManager
+
+<h3>Report Manager</h3>
+
+<DxButton RenderStyle="ButtonRenderStyle.Danger" Click="@AddItem" IconCssClass="" Text="New Report" />
+<br />
+<ReportModelListingComponent Mode="1"></ReportModelListingComponent>
+
+@code {
+    void AddItem(MouseEventArgs args)
+    {
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "reportmodeledit/0");
+        //NavigationManager.NavigateTo("spmodeledit/0");
+    }
+}

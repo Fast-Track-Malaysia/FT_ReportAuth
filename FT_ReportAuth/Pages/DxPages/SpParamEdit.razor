@@ -1,0 +1,128 @@
+﻿@page "/spparamedit/{id:int}/{spname}"
+
+@using System.Text.Json
+@using System.Dynamic
+@using System.Data
+@using FT_SpReport.CoreBusiness.Helpers
+@using Microsoft.AspNetCore.Http
+@using Microsoft.Extensions.Primitives
+
+@inject NavigationManager NavigationManager
+@inject SpModelService SpModelService
+@inject SpReportService SpReportService
+@inject ILocalStorageService LocalStorageService
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h3>@SpName</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Param Name
+            </th>
+            <th>
+                Param Type
+            </th>
+            <th>
+                Param Value
+            </th>
+            <th>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (spParamModel != null && spParamModel.Count() > 0)
+        {
+            @foreach (var item in spParamModel.OrderBy(pp => pp.Seq))
+            {
+                <SPParameterComponent Param="item" querying="true"></SPParameterComponent>
+            }
+        }
+        else
+        {
+            <tr>
+                <td>
+                    No Parameters found.
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+<DxButton RenderStyle="ButtonRenderStyle.Success" Click="@SubmitForm" IconCssClass="" Text="Submit" Enabled="@disablebutton" />
+
+<div>
+    @if (submitted)
+    {
+        <SPReportComponent queryresult="@rtn" spName="@SpName"></SPReportComponent>
+    }
+</div>
+
+@code {
+    bool disablebutton { get { return !submitted; } }
+    ICollection<SpParamModel> spParamModel { get; set; }
+
+    [Parameter]
+    public int Id { get; set; }
+    [Parameter]
+    public string SpName { get; set; }
+
+    IEnumerable<ExpandoObject> rtn { get; set; }
+
+    public bool submitted { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id <= 0) return;
+
+        spParamModel = await SpModelService.getAsyncModelDetails(Id);
+    }
+    async void SubmitForm(MouseEventArgs args)
+    {
+        if (spParamModel == null) return;
+
+        foreach (SpParamModel item in spParamModel)
+        {
+            if (item.ParamType == SpParamTypeEnum.dateType)
+            {
+                if (item.ParamDatetime != null)
+                    item.ParamValue = JsonSerializer.Serialize(item.ParamDatetime);
+            }
+            else if (item.ParamType == SpParamTypeEnum.numberType)
+            {
+                if (item.ParamDatetime != null)
+                    item.ParamValue = item.ParamDecimal.ToString();
+            }
+        }
+
+        try
+        {
+            try
+            {
+                string username = HttpContextAccessor.HttpContext.User.Identity.Name == null? "": HttpContextAccessor.HttpContext.User.Identity.Name;
+
+                rtn = await SpReportService.postAsyncModel<IEnumerable<ExpandoObject>>(SpName, username, spParamModel.ToArray());
+            }
+            catch
+            {
+
+            }
+            await LocalStorageService.SetItem<string>(StaticValues.SPName, SpName);
+            await LocalStorageService.SetItem<SpParamModel[]>(StaticValues.SPParam, spParamModel.ToArray());
+
+            submitted = true;
+
+            StateHasChanged();
+        }
+        catch
+        {
+
+        }
+    }
+
+}

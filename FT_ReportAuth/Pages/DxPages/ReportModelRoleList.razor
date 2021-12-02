@@ -1,0 +1,12 @@
+﻿@page "/reportmodelrolelist"
+@attribute [Authorize(Policy = "RequireManagerPolicy")]
+
+@inject NavigationManager NavigationManager
+
+<h3>Report Role</h3>
+
+<ReportModelListingComponent Mode="2"></ReportModelListingComponent>
+
+@code {
+
+}

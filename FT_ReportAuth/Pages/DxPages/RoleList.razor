@@ -1,0 +1,77 @@
+﻿@page "/rolelist"
+@attribute [Authorize(Policy = "RequireAdminPolicy")]
+@using Microsoft.AspNetCore.Identity;
+@using DevExtreme.AspNet.Data.ResponseModel
+@using DevExtreme.AspNet.Data
+@using System.Threading
+@using System.Threading.Tasks
+
+@inject NavigationManager NavigationManager
+@inject IHttpService HttpService
+
+<h3>Role</h3>
+
+<DxButton RenderStyle="ButtonRenderStyle.Danger" @onclick="@(() => PopupVisible = true)" IconCssClass="" Text="New Role" />
+<DxPopup HeaderText="New Role"
+            @bind-Visible="@PopupVisible">
+    <Content>
+        <DxTextBox @bind-Text="@NewRole" ClearButtonDisplayMode="DataEditorClearButtonDisplayMode.Auto"
+                    BindValueMode="BindValueMode.OnInput"></DxTextBox>
+        <br />
+        <DxButton RenderStyle="ButtonRenderStyle.Success" Click="@SubmitForm" IconCssClass="" Text="Submit" />
+    </Content>
+</DxPopup>
+
+<br />
+@if (SpModels != null && SpModels.Length > 0)
+{
+    <DxDataGrid T="@IdentityRole" CustomData="@LoadOrderData"
+                PageSize="10" ShowFilterRow="true"
+                @ref="@grid" RowClick="@OnRowClick">
+        <DxDataGridColumn Field="@nameof(IdentityRole.Name)" Caption="Role Name"></DxDataGridColumn>
+    </DxDataGrid>
+    <br />
+
+    <br />
+}
+else
+{
+    <b>Nothing found.</b>
+}
+
+@code {
+    string NewRole { get; set; }
+    bool PopupVisible { get; set; } = false;
+    IdentityRole[] SpModels;
+    DxDataGrid<IdentityRole> grid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SpModels = await HttpService.Get<IdentityRole[]>(string.Format("api/UserRole"));
+    }
+
+    protected Task<LoadResult> LoadOrderData(DataSourceLoadOptionsBase options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(DataSourceLoader.Load(SpModels, options));
+    }
+
+    void OnRowClick(DataGridRowClickEventArgs<IdentityRole> args)
+    {
+        //if (grid.IsDataRowSelected(args.DataItem) && !args.MouseEventArgs.CtrlKey)
+        //{
+        //    grid.SetDataRowSelected(args.DataItem, false);
+        //    args.Handled = true;
+        //}
+    }
+    async void SubmitForm(MouseEventArgs args)
+    {
+        if (string.IsNullOrWhiteSpace(NewRole)) return;
+        await HttpService.Post<IdentityRole>("api/UserRole", NewRole);
+        NewRole = "";
+        PopupVisible = false;
+        SpModels = await HttpService.Get<IdentityRole[]>(string.Format("api/UserRole"));
+        await grid.Refresh();
+        StateHasChanged();
+    }
+
+}

@@ -1,0 +1,123 @@
+﻿@page "/spmodeledit/{id:int}"
+
+@using FT_SpReport.CoreBusiness.Helpers
+
+@inject NavigationManager NavigationManager
+@inject SpModelService SpModelService
+
+<DxFormLayout Data="@spModel"
+              ItemUpdating="@((pair) => OnItemUpdating(pair.Key, pair.Value))">
+    <DxFormLayoutItem Caption="ID:" ColSpanMd="6">
+        <Template>
+            <DxSpinEdit @bind-Value="@Id" ReadOnly="true"></DxSpinEdit>
+        </Template>
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Field="@nameof(spModel.SpName)" Caption="Query Name:" ColSpanMd="6" />
+    <DxFormLayoutItem Field="@nameof(spModel.SpDesciption)" Caption="SP Description:" ColSpanMd="12" />
+    <DxFormLayoutItem Caption="SQL:" ColSpanMd="12">
+        <Template>
+            <DxMemo NullText="Type SQL..." @bind-Text="@spModel.SpSql" />
+        </Template>
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+<DxButton RenderStyle="ButtonRenderStyle.Danger" Click="@AddItem" IconCssClass="" Text="New Parameter" />
+<br />
+<table id="ParamList" class="table">
+    <thead>
+        <tr>
+            <th>
+            </th>
+            <th>
+                #
+            </th>
+            <th>
+                Param Name
+            </th>
+            <th>
+                Param Type
+            </th>
+            <th>
+                Lookup
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (spModel != null && spModel.Details != null && spModel.Details.Count() > 0)
+        {
+            @foreach (var item in spModel.Details.OrderBy(pp => pp.Seq))
+            {
+                <SPParameterComponent Param="item" querying="false" Model="spModel"></SPParameterComponent>
+            }
+        }
+        else
+        {
+            <tr>
+                <td>
+                    No Parameters found.
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+<br />
+<DxButton RenderStyle="ButtonRenderStyle.Success" Click="@SubmitForm" IconCssClass="" Text="Submit" />
+<DxButton RenderStyle="ButtonRenderStyle.Info" Click="@PreviewForm" IconCssClass="" Text="Preview" />
+
+
+@code {
+    SpModel spModel = new SpModel();
+
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id <= 0) return;
+
+        spModel = await SpModelService.getAsyncModels(Id);
+        spModel.Details = await SpModelService.getAsyncModelDetails(Id);
+    }
+
+    void OnItemUpdating(string fieldName, object newValue)
+    {
+        GeneralHelper.SetPropertyValue(spModel, fieldName, newValue);
+    }
+    void AddItem(MouseEventArgs args)
+    {
+        int seq = 0;
+        if (spModel.Details.Count == 0)
+            seq = 1;
+        else
+            seq = spModel.Details.Max(pp => pp.Seq) + 1;
+        spModel.Details.Add(new SpParamModel() { Seq = seq, ParamType = SpParamTypeEnum.stringType });
+        StateHasChanged();
+    }
+    async void SubmitForm(MouseEventArgs args)
+    {
+        await UpdateModelAsync();
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "spmodellist");
+        //NavigationManager.NavigateTo("spmodellist/1");
+    }
+
+    async void PreviewForm(MouseEventArgs args)
+    {
+        await UpdateModelAsync();
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "spparamedit/" + Id.ToString() + "/" + spModel.SpName);
+    }
+
+    async Task UpdateModelAsync()
+    {
+        StateHasChanged();
+        if (spModel == null) return;
+        if (spModel.Id > 0)
+            spModel = await SpModelService.updateAsyncModel(spModel);
+        else
+            spModel = await SpModelService.addAsyncModel(spModel);
+    }
+}

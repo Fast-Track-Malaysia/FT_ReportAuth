@@ -1,0 +1,116 @@
+﻿@using System
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Collections.ObjectModel
+@using Microsoft.AspNetCore.Http
+
+@using FT_SpReport.CoreBusiness.Models
+@using FT_SpReport.CoreBusiness.Services
+@using DevExtreme.AspNet.Data.ResponseModel
+@using DevExtreme.AspNet.Data
+
+@inject NavigationManager NavigationManager
+@inject ReportModelService ReportModelService
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IHttpContextAccessor  HttpContextAccessor
+
+@if (lookupmodels != null && lookupmodels.Length > 0)
+{
+    <DxDataGrid T="@ReportModel" CustomData="@LoadOrderData"
+                PageSize="10" ShowFilterRow="true"
+                @ref="@grid" RowClick="@OnRowClick">
+        <DxDataGridColumn Field="@nameof(ReportModel.ReportName)" Caption="Lookup Name"></DxDataGridColumn>
+    </DxDataGrid>
+    <br />
+
+    <br />
+}
+else
+{
+    <b>Nothing found.</b>
+}
+
+@code {
+    private string _authMessage;
+    private string _surnameMessage;
+    private IEnumerable<Claim> _claims = Enumerable.Empty<Claim>();
+
+    private async Task GetClaimsPrincipalData()
+    {
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            _authMessage = $"{user.Identity.Name} is authenticated.";
+            _claims = user.Claims;
+            _surnameMessage =
+                $"Surname: {user.FindFirst(c => c.Type == ClaimTypes.Surname)?.Value}";
+        }
+        else
+        {
+            _authMessage = "The user is NOT authenticated.";
+        }
+    }
+
+    [Parameter]
+    public int Mode { get; set; }
+
+    DxDataGrid<ReportModel> grid;
+    ReportModel[] lookupmodels;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        string name = HttpContextAccessor.HttpContext.User.Identity.Name;
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        name = authState.User.Identity.Name;
+
+        if (Mode == 1)
+            lookupmodels = await ReportModelService.getAsyncModels();
+        else if (Mode == 0)
+        {
+            if (!string.IsNullOrWhiteSpace(name))
+                lookupmodels = await ReportModelService.getAsyncFilterModels(name);
+        }
+        else if (Mode == 2)
+            lookupmodels = await ReportModelService.getAsyncModels();
+
+
+    }
+
+    protected Task<LoadResult> LoadOrderData(DataSourceLoadOptionsBase options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(DataSourceLoader.Load(lookupmodels, options));
+    }
+    void OnRowClick(DataGridRowClickEventArgs<ReportModel> args)
+    {
+        //if (grid.IsDataRowSelected(args.DataItem) && !args.MouseEventArgs.CtrlKey)
+        //{
+        //    grid.SetDataRowSelected(args.DataItem, false);
+        //    args.Handled = true;
+        //}
+        int id = args.DataItem.Id;
+        if (args.MouseEventArgs.Detail == 2) // double click
+        {
+        }
+        else if (args.MouseEventArgs.CtrlKey)
+        {
+        }
+        else
+        {
+            if (Mode == 1)
+                NavigationManager.NavigateTo(NavigationManager.BaseUri + "reportmodeledit/" + id.ToString());
+            else if (Mode == 0)
+                NavigationManager.NavigateTo(NavigationManager.BaseUri + "reportpreview/" + id.ToString());
+            else if (Mode == 2)
+                NavigationManager.NavigateTo(NavigationManager.BaseUri + "reportassignroleedit/" + SpRoleypeEnum.reportmodel.ToString() + "/" + args.DataItem.ReportName);
+        }
+    }
+}

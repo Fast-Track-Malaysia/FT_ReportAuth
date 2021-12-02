@@ -1,0 +1,79 @@
+﻿@using System;
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Collections.ObjectModel
+@using System.Data
+@using System.Dynamic
+@using System.IO;
+@using Newtonsoft.Json;
+
+@using FT_SpReport.CoreBusiness.Helpers
+@using DevExtreme.AspNet.Data.ResponseModel
+@using DevExtreme.AspNet.Data
+@using Microsoft.AspNetCore.Http;
+
+@inject NavigationManager NavigationManager
+@inject SpReportService SpReportService
+@inject ILocalStorageService LocalStorageService
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h3>Query Result</h3>
+<ExportButtons ExportUrlInfo="@exportUrlInfo"></ExportButtons>
+<div>
+    <DxDataGrid Id="report" T="@object" ShowFilterRow="true" CustomData="@LoadOrderData" AllowSort="false">
+        @BuildColumns()
+    </DxDataGrid>
+
+
+
+</div>
+@code {
+    [Parameter]
+    public ICollection<SpParamModel> spParamModel { get; set; }
+    [Parameter]
+    public string spName { get; set; }
+
+    [Parameter]
+    public IEnumerable<ExpandoObject> queryresult { get; set; }
+    LoadResult result { get; set; }
+    private readonly ObservableCollection<Tuple<string, string>> exportUrlInfo = new ObservableCollection<Tuple<string, string>>();
+
+    private RenderFragment BuildColumns()
+    {
+        RenderFragment columns = b =>
+        {
+            if (queryresult == null || !queryresult.Any()) return;
+
+            IDictionary<string, object> collie = (IDictionary<string, object>)queryresult.FirstOrDefault();
+
+            for (int i = 0; i < collie.Keys.Count; ++i)
+            {
+                b.OpenComponent(i, typeof(DxDataGridColumn));
+                b.AddAttribute(0, "Field", collie.Keys.ElementAt(i));
+                b.CloseComponent();
+            }
+        };
+        return columns;
+    }
+    protected async Task<LoadResult> LoadOrderData(DataSourceLoadOptionsBase options, CancellationToken cancellationToken)
+    {
+        string username = HttpContextAccessor.HttpContext.User.Identity.Name == null ? "" : HttpContextAccessor.HttpContext.User.Identity.Name;
+
+        string baseUri = NavigationManager.BaseUri.ToString();
+        exportUrlInfo.Clear();
+
+        #region devextreme with DataSourceLoadOptions
+        string temp = options.ConvertToGetRequestUri(baseUri + "api/SpExport") + "&format=pdf&spname=" + spName + "&username=" + username;
+        #endregion
+
+        exportUrlInfo.Add(Tuple.Create(baseUri + "api/SpExport?format=pdf&spname=" + spName + "&username=" + username, "Export PDF"));
+        exportUrlInfo.Add(Tuple.Create(baseUri + "api/SpExport?format=xlsx&spname=" + spName + "&username=" + username, "Export XLSX"));
+        exportUrlInfo.Add(Tuple.Create(baseUri + "api/SpExport?format=docx&spname=" + spName + "&username=" + username, "Export DOCX"));
+
+        //await LocalStorageService.RemoveItem(StaticValues.SPData);
+        //await LocalStorageService.SetItem<IEnumerable<ExpandoObject>>(StaticValues.SPData, queryresult);
+        result = DataSourceLoader.Load(queryresult, options);
+
+        return await Task.FromResult(result);
+    }
+}

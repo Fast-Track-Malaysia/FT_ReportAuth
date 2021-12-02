@@ -1,0 +1,8 @@
+﻿@page "/chartedit/{spname}"
+
+<ChartComponent spname="@spname"></ChartComponent>
+
+@code {
+    [Parameter]
+    public string spname { get; set; }
+}

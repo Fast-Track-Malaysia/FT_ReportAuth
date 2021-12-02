@@ -1,0 +1,13 @@
+﻿@page "/"
+
+<AuthorizeView>
+    <NotAuthorized>
+        <h1>Hello!</h1>
+        Welcome to Query Management Portal. Please Login to continue...
+        @*<SurveyPrompt Title="How is Blazor working for you?" />*@
+    </NotAuthorized>
+    <Authorized>
+        <h1>Home Page</h1>
+        Please select an action to continue...
+    </Authorized>
+</AuthorizeView>

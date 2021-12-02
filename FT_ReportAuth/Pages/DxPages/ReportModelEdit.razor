@@ -1,0 +1,60 @@
+﻿@page "/reportmodeledit/{id:int}"
+
+@using FT_SpReport.CoreBusiness.Helpers
+
+@inject NavigationManager NavigationManager
+@inject ReportModelService ReportModelService
+
+<DxFormLayout Data="@ReportModel"
+              ItemUpdating="@((pair) => OnItemUpdating(pair.Key, pair.Value))">
+    <DxFormLayoutItem Caption="ID:" ColSpanMd="6">
+        <Template>
+            <DxSpinEdit @bind-Value="@Id" ReadOnly="true"></DxSpinEdit>
+        </Template>
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Field="@nameof(ReportModel.ReportName)" Caption="Report Name:" ColSpanMd="6" />
+    <DxFormLayoutItem Field="@nameof(ReportModel.ReportURL)" Caption="Report URL:" ColSpanMd="12" />
+</DxFormLayout>
+
+<br />
+<DxButton RenderStyle="ButtonRenderStyle.Success" Click="@SubmitForm" IconCssClass="" Text="Submit" />
+
+
+@code {
+    ReportModel ReportModel = new ReportModel();
+
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id <= 0) return;
+
+        ReportModel = await ReportModelService.getAsyncModels(Id);
+    }
+
+    void OnItemUpdating(string fieldName, object newValue)
+    {
+        GeneralHelper.SetPropertyValue(ReportModel, fieldName, newValue);
+    }
+    async void SubmitForm(MouseEventArgs args)
+    {
+        await UpdateModelAsync();
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "reportmodellist");
+        //NavigationManager.NavigateTo("spmodellist/1");
+    }
+
+    async Task UpdateModelAsync()
+    {
+        StateHasChanged();
+        if (ReportModel == null) return;
+        if (ReportModel.Id > 0)
+            ReportModel = await ReportModelService.updateAsyncModel(ReportModel);
+        else
+            ReportModel = await ReportModelService.addAsyncModel(ReportModel);
+    }
+}

@@ -1,0 +1,63 @@
+﻿@page "/userlist"
+@attribute [Authorize(Policy = "RequireManagerPolicy")]
+@using Microsoft.AspNetCore.Identity;
+@using DevExtreme.AspNet.Data.ResponseModel
+@using DevExtreme.AspNet.Data
+@using System.Threading
+@using System.Threading.Tasks
+
+@inject NavigationManager NavigationManager
+@inject IHttpService HttpService
+
+<h3>User Role</h3>
+
+@if (SpModels != null && SpModels.Length > 0)
+{
+    <DxDataGrid T="@IdentityUser" CustomData="@LoadOrderData"
+                PageSize="10" ShowFilterRow="true"
+                @ref="@grid" RowClick="@OnRowClick">
+        <DxDataGridColumn Field="@nameof(IdentityUser.UserName)" Caption="User Name"></DxDataGridColumn>
+    </DxDataGrid>
+    <br />
+
+    <br />
+}
+else
+{
+    <b>Nothing found.</b>
+}
+
+@code {
+    IdentityUser[] SpModels;
+    DxDataGrid<IdentityUser> grid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SpModels = await HttpService.Get<IdentityUser[]>(string.Format("api/User"));
+    }
+
+    protected Task<LoadResult> LoadOrderData(DataSourceLoadOptionsBase options, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(DataSourceLoader.Load(SpModels, options));
+    }
+
+    void OnRowClick(DataGridRowClickEventArgs<IdentityUser> args)
+    {
+        //if (grid.IsDataRowSelected(args.DataItem) && !args.MouseEventArgs.CtrlKey)
+        //{
+        //    grid.SetDataRowSelected(args.DataItem, false);
+        //    args.Handled = true;
+        //}
+        if (args.MouseEventArgs.Detail == 2) // double click
+        {
+        }
+        else if (args.MouseEventArgs.CtrlKey)
+        {
+        }
+        else
+        {
+            NavigationManager.NavigateTo(NavigationManager.BaseUri + "spassignroleedit/" + SpRoleypeEnum.user.ToString() + "/" + args.DataItem.UserName);
+        }
+    }
+
+}

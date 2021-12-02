@@ -1,0 +1,64 @@
+﻿@page "/lookupmodeledit/{id:int}"
+
+@using FT_SpReport.CoreBusiness.Helpers
+
+@inject NavigationManager NavigationManager
+@inject LookupModelService LookupModelService
+
+<DxFormLayout Data="@lookupModel"
+              ItemUpdating="@((pair) => OnItemUpdating(pair.Key, pair.Value))">
+    <DxFormLayoutItem Caption="ID:" ColSpanMd="6">
+        <Template>
+            <DxSpinEdit @bind-Value="@Id" ReadOnly="true"></DxSpinEdit>
+        </Template>
+    </DxFormLayoutItem>
+    <DxFormLayoutItem Field="@nameof(lookupModel.LookUpName)" Caption="Lookup Name:" ColSpanMd="6" />
+    <DxFormLayoutItem Caption="SQL:" ColSpanMd="12">
+        <Template>
+            <DxMemo NullText="Type SQL..." @bind-Text="@lookupModel.LookUpSQL" />
+        </Template>
+    </DxFormLayoutItem>
+</DxFormLayout>
+
+<br />
+<DxButton RenderStyle="ButtonRenderStyle.Success" Click="@SubmitForm" IconCssClass="" Text="Submit" />
+
+
+@code {
+    LookupModel lookupModel = new LookupModel();
+
+    [Parameter]
+    public int Id { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id <= 0) return;
+
+        lookupModel = await LookupModelService.getAsyncModels(Id);
+    }
+
+    void OnItemUpdating(string fieldName, object newValue)
+    {
+        GeneralHelper.SetPropertyValue(lookupModel, fieldName, newValue);
+    }
+    async void SubmitForm(MouseEventArgs args)
+    {
+        await UpdateModelAsync();
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "lookupmodellist");
+        //NavigationManager.NavigateTo("spmodellist/1");
+    }
+
+    async Task UpdateModelAsync()
+    {
+        StateHasChanged();
+        if (lookupModel == null) return;
+        if (lookupModel.Id > 0)
+            lookupModel = await LookupModelService.updateAsyncModel(lookupModel);
+        else
+            lookupModel = await LookupModelService.addAsyncModel(lookupModel);
+    }
+}

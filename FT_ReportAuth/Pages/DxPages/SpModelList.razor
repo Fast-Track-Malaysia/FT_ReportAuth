@@ -1,0 +1,20 @@
+﻿@page "/spmodellist"
+@attribute [Authorize(Policy = "RequireAdminPolicy")]
+
+@inject NavigationManager NavigationManager
+
+<h3>Query Manager</h3>
+
+<DxButton RenderStyle="ButtonRenderStyle.Danger" Click="@AddItem" IconCssClass="" Text="New Query" />
+<br />
+
+<SpModelListingComponent Mode="1"></SpModelListingComponent>
+
+@code {
+
+    void AddItem(MouseEventArgs args)
+    {
+        NavigationManager.NavigateTo(NavigationManager.BaseUri + "spmodeledit/0");
+        //NavigationManager.NavigateTo("spmodeledit/0");
+    }
+}

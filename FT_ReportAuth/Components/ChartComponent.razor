@@ -1,0 +1,58 @@
+﻿@using System.Dynamic
+@using System.Data
+@using Microsoft.AspNetCore.Http
+@using FT_SpReport.CoreBusiness.Helpers
+
+@inject SpReportService SpReportService
+@inject IHttpContextAccessor HttpContextAccessor
+
+<h3>ChartComponent</h3>
+
+@if (GridData == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+<DxChart Data="@GridData">
+    <DxChartCommonSeries NameField="@((SaleInfo s) => s.mydate.Year)"
+                         ArgumentField="@((SaleInfo s) => s.cardcode)"
+                         ValueField="@((SaleInfo s) => s.doctotal)"
+                         SeriesType="ChartSeriesType.Bar">
+    </DxChartCommonSeries>
+</DxChart>
+}
+
+@code {
+    //private object GridData { get; set; }
+    IQueryable<SaleInfo> GridData { get; set; }
+    [Parameter]
+    public string spname { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            string username = HttpContextAccessor.HttpContext.User.Identity.Name == null ? "" : HttpContextAccessor.HttpContext.User.Identity.Name;
+
+            List<SaleInfo> list = await SpReportService.postAsyncModel<List<SaleInfo>>(spname, username);
+            if (list.Count > 0)
+                GridData = list.AsQueryable<SaleInfo>();
+            //GridData = list.AsQueryable<IQueryable<SaleInfo>>();
+            //GridData = exobj.ToDataTable("table");
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+
+    class SaleInfo
+    {
+        public int docnum { get; set; }
+        public string cardcode { get; set; }
+        public decimal doctotal { get; set; }
+        public string docdate { get; set; }
+        public DateTime mydate { get { return DateTime.Parse(docdate); } }
+    }
+}
